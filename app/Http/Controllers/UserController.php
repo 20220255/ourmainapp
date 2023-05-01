@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OurExampleEvent;
 use App\Models\User;
 use App\Models\Follow;
 use Illuminate\Http\Request;
@@ -50,6 +51,7 @@ class UserController extends Controller
             // this means that the server can trust the browser since this was created when the
             // user was authenticated during the time he or she logged in.
             $request->session()->regenerate();
+            event(new OurExampleEvent(['username' => auth()->user()->username, 'action' => 'login']));
             return redirect('/')->with('success','You have successfully logged in.');
         } else {
             return redirect('/')->with('failure', 'Invalid login');
@@ -57,7 +59,8 @@ class UserController extends Controller
 
     }
 
-    public function logout(Request $request) {
+    public function logout() {
+        event(new OurExampleEvent(['username' => auth()->user()->username, 'action' => 'logout']));
         auth()->logout();
         return redirect('/')->with('success', 'You are now logged out.');
     }
@@ -85,6 +88,11 @@ class UserController extends Controller
         // return $thePosts;
         return view('profile-posts', ['posts' => $user->posts()->latest()->get()]);
     }
+
+    public function profileRaw(User $user) {
+        return response()->json('theHTML' => 'Imagine this is the posts HTML.', 'docTitle' => $user->username . "'s Profile.");
+    }
+
 
 
     public function profileFollowers(User $user) {
