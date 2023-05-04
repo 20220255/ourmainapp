@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\OurExampleEvent;
+use App\Models\Post;
 use App\Models\User;
 use App\Models\Follow;
 use Illuminate\Http\Request;
+use App\Events\OurExampleEvent;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\View;
 use Intervention\Image\Facades\Image;
@@ -32,6 +34,21 @@ class UserController extends Controller
 
 
         return redirect('/')->with('success', 'Thank you for creating an account.');
+    }
+
+    public function loginApi(Request $request) {
+        $incomingFields = $request->validate([
+            'username' => 'required',
+            'password' => 'required'
+        ]);
+
+        if (auth()->attempt($incomingFields)) {
+            $user = User::where('username', $incomingFields['username'])->first();
+            $token = $user->createToken('ourapptoken')->plainTextToken;
+            return $token;
+        }
+        return 'Sorry';
+
     }
 
     public function login(Request $request) {
@@ -69,7 +86,11 @@ class UserController extends Controller
      if (auth()->check()) {
         return  view('homepage-feed', ['posts' => auth()->user()->feedPosts()->latest()->paginate(3)]);
      } else {
-        return view('homepage');
+        $postCount = Cache::remember('postCount', 20, function() {
+            //sleep(5);
+            return Post::count();
+        });
+        return view('homepage', ['postCount' => $postCount]);
      };
     }
 
@@ -90,14 +111,17 @@ class UserController extends Controller
     }
 
     public function profileRaw(User $user) {
-        return response()->json('theHTML' => 'Imagine this is the posts HTML.', 'docTitle' => $user->username . "'s Profile.");
+        return response()->json(['theHTML' => view('profile-posts-only', ['posts' => $user->posts()->latest()->get()])->render(), 'docTitle' => $user->username . "'s Profile."]);
     }
-
 
 
     public function profileFollowers(User $user) {
         $this->getSharedData($user);
         return view('profile-followers', ['followers' => $user->followers()->latest()->get()]);
+    }
+
+    public function profileFollowersRaw(User $user) {
+        return response()->json(['theHTML' => view('profile-followers-only', ['followers' => $user->followers()->latest()->get()])->render(), 'docTitle' => $user->username . "'s Followers."]);
     }
 
 
@@ -108,6 +132,14 @@ class UserController extends Controller
         // return $thePosts;
         return view('profile-following', ['followings' => $user->followingTheseUsers()->latest()->get()]);
     }
+
+    public function profileFollowingRaw(User $user) {
+        // see User model and check posts method where User has one-to-many posts relationship
+        // $thePosts = $user->posts()->get();
+        // return $thePosts;
+        return response()->json(['theHTML' => view('profile-followings-only', ['followings' => $user->followingTheseUsers()->latest()->get()])->render(), 'docTitle' => "Users whom " . $user->username . " are following."]);
+    }
+
 
     public function showAvatarForm() {
         return view('avatar-form');

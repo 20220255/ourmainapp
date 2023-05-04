@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendNewPostEmail;
 use App\Models\Post;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class PostController extends Controller
 {
@@ -36,8 +38,36 @@ class PostController extends Controller
         // in our database.
         $newPost = Post::create($incomingFields);
 
+        dispatch(new SendNewPostEmail(['sendTo' => auth()->user()->email, 'name' => auth()->user()->username, 'title' => $newPost->title]));
+
         return redirect("/post/{$newPost->id}")->with('success', 'Successfully created new post');
     }
+
+    public function storeNewPostApi(Request $request) {
+
+        $incomingFields = $request->validate([
+            'title' => 'required',
+            'body' => 'required'
+        ]);
+
+        // used for malicious tags - strip_tags
+        $incomingFields['title'] = strip_tags($incomingFields['title']);
+        $incomingFields['body'] = strip_tags($incomingFields['body']);
+        // auth() will call the id of the current logged in user from the the user table.
+        $incomingFields['user_id'] = auth()->id();
+
+        // this will save whatever was entered in the $request fields and into the posts table. This was
+        // made possible by creating a Post.php model class and where it connects to the actual posts table
+        // in our database.
+        $newPost = Post::create($incomingFields);
+
+        dispatch(new SendNewPostEmail(['sendTo' => auth()->user()->email, 'name' => auth()->user()->username, 'title' => $newPost->title]));
+
+        return $newPost->id;
+    }
+
+
+
     // type hinting
     public function viewSinglePost(Post $post) {
 
@@ -51,6 +81,12 @@ class PostController extends Controller
         $post->delete();
         return redirect('/profile/' . auth()->user()->username)->with('success', 'successfully deleted');
     }
+
+    public function deleteApi(Post $post) {
+        $post->delete();
+        return 'true';
+    }
+
 
     public function showEditForm(Post $post) {
         return view('edit-post', ['post' => $post]);
