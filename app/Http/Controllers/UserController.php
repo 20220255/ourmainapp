@@ -147,8 +147,8 @@ class UserController extends Controller
 
     public function storeAvatar(Request $request) {
         // validate first the incoming data request
-        // use pipe symbol to add validations i.e. shold be image, reuired, and
-        // max of 3MB.
+        // use pipe symbol to add validations i.e. should be image, required, and
+        // max of 5MB.
         $request->validate([
             'avatar' => 'required|image|max:5000'
         ]);
