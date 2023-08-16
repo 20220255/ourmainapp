@@ -146,6 +146,12 @@ class UserController extends Controller
     }
 
     public function storeAvatar(Request $request) {
+
+        // YOU NEED TO RUN - php artisan storage:link
+
+        // $request->file('avatar')->store('public/avatars');
+        // return 'hey';
+
         // validate first the incoming data request
         // use pipe symbol to add validations i.e. should be image, required, and
         // max of 5MB.
