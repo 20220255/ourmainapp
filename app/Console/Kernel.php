@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->call(function() {
-            Mail::to('test@google.com')->send(new RecapEmail());
+            Mail::to('mark_a_capili@outlook.com')->send(new RecapEmail());
         })->everyMinute();
         // $schedule->command('inspire')->hourly();
     }
